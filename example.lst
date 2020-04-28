@@ -1,0 +1,113 @@
+# /path 	- add to backup
+# -/path	- remove from backup after coping
+# D/path	- create an empty directory into backup
+# !command	- execute a command
+# *ANY		- execute any string when that char called as second parameter
+# >/path/|ignore|ignore... - copy path ignoring folders
+# @archive=/folder/|ignore|ignore|+unignore_inside_ignore
+
+/etc/nginx/*
+/etc/init.d/nginx
+
+/etc/php/*
+/etc/init.d/php7.0-fpm
+
+/etc/mysql/*
+/etc/init.d/mysql
+/etc/apparmor.d/usr.sbin.mysqld
+
+/etc/postgresql/
+/etc/init.d/postgresql
+
+/etc/letsencrypt/
+
+/etc/sphinxsearch/
+/data/sphinx/conf/
+#/data/sphinx/dicts/
+#/data/sphinx/indx/
+#/data/sphinx/logs/
+/data/sphinx/pids/
+/data/sphinx/sh/
+/etc/init.d/sphinxsearch
+
+/etc/ssh/sshd_config
+/etc/network/interfaces
+/etc/init/control-alt-delete.conf
+
+/var/spool/cron/crontabs/
+
+/home/mstr/
+-/home/mstr/.cache
+
+/root/
+-/root/.cache
+
+/backups/backup.lst
+/backups/backup.sh
+/backups/pg_backup_rotated.sh
+
+D/data/cache/cdn
+D/data/cache/proxy
+
+!find /data/nfs/ -iname *.log -exec truncate -s 0 {} \;
+!journalctl --vacuum-time=2d
+
+/data/nfs/acme/
+D/data/nfs/logs
+D/data/nfs/tmp
+/data/nfs/unknown/
+/data/nfs/zi.ru.stat/
+/data/nfs/zi.ru.cdn/
+
+!rm /data/nfs/zi.ru/public_html/_db/ready/*
+!rm /data/nfs/zi.ru/public_html/s/calls/*
+D/data/nfs/zi.ru/cache
+/data/nfs/zi.ru/dev/
+/data/nfs/zi.ru/etc/
+/data/nfs/zi.ru/images_html/
+/data/nfs/zi.ru/lib/
+D/data/nfs/zi.ru/logs
+/data/nfs/zi.ru/op_clients/
+/data/nfs/zi.ru/public_html/
+D/data/nfs/zi.ru/tmp
+/data/nfs/zi.ru/usr/
+D/data/nfs/zi.ru/var/lib/php/sessions
+/data/nfs/zi.ru/fix.sh
+/data/nfs/zi.ru/GENcmpSMSList.sh
+
+>!echo nithing to do
+
+*!echo MySQL backuping...
+*!echo MySQL stoping...
+*!service mysql stop
+*!sleep 5
+*/data/db/mysql/
+*!service mysql start
+*!echo MySQL starting...
+*!tar -cz  -f mysql.tgz data/db/mysql
+*-/data/db/mysql/
+
+*!echo Sphinx backuping...
+*!echo Sphinx stoping...
+*!/usr/bin/searchd --stopwait
+*!sleep 5
+*/data/sphinx/
+*!echo Sphinx starting...
+*!/usr/bin/searchd
+*!tar -cz -f sphinx.tgz data/sphinx
+*-/data/sphinx/dicts/
+*-/data/sphinx/indx/
+*-/data/sphinx/logs/
+
+#*!mkdir mysql
+#*!mysqlhotcopy masa_stat -h 127.0.0.1 -u root -p gFgv65br%fdf2hcf mysql
+#*!mysqlhotcopy mysql -h 127.0.0.1 -u root -p gFgv65br%fdf2hcf mysql
+#*!tar -cz  -f mysql.tgz 
+
+!echo Postgres sql except big tables
+!pg_dump -h localhost -p 5432 -U masafrnt --dbname=masafrnt -F c -E UTF8 -Z 9 -O -x -n masa -T masa.ms_companies -T masa.cms_obj_photos -T masa.ms_companies_categories -v -f pgMain.dmp
+
+*!mkdir pgbase
+*!pg_basebackup -U postgres -D pgbase -Ft -z -x -w -v
+*!mv pgbase/*.tar.gz pgbase.tgz
+*!rmdir pgbase
